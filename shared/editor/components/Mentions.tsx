@@ -63,7 +63,6 @@ export const MentionUser = observer(function MentionUser_(
         "ProseMirror-selectednode": isSelected,
       })}
     >
-      <EmailIcon size={18} />
       {user?.name || node.attrs.label}
     </span>
   );
