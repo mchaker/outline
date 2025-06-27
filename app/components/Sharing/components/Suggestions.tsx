@@ -155,9 +155,7 @@ export const Suggestions = observer(
       }
       return {
         title: suggestion.name,
-        subtitle: suggestion.email
-          ? suggestion.email
-          : suggestion.isViewer
+        subtitle: suggestion.isViewer
           ? t("Viewer")
           : t("Editor"),
         image: <Avatar model={suggestion} size={AvatarSize.Medium} />,
