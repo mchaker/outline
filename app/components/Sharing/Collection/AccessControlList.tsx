@@ -211,7 +211,6 @@ export const AccessControlList = observer(
                     <Avatar model={membership.user} size={AvatarSize.Medium} />
                   }
                   title={membership.user.name}
-                  subtitle={membership.user.email}
                   actions={
                     <div style={{ marginRight: -8 }}>
                       <InputMemberPermissionSelect
