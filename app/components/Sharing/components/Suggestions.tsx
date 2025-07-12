@@ -154,10 +154,7 @@ export const Suggestions = observer(
       }
       return {
         title: suggestion.name,
-        subtitle: t("TouhouAI member")
-          : suggestion.isViewer
-            ? t("Viewer")
-            : t("Editor"),
+        subtitle: suggestion.isViewer ? t("Viewer") : t("Editor"),
         image: <Avatar model={suggestion} size={AvatarSize.Medium} />,
       };
     }
