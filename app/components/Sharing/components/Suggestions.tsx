@@ -96,8 +96,8 @@ export const Suggestions = observer(
               .notInDocument(document.id, query)
               .filter((u) => u.id !== user.id)
           : collection
-          ? users.notInCollection(collection.id, query)
-          : users.activeOrInvited
+            ? users.notInCollection(collection.id, query)
+            : users.activeOrInvited
       ).filter((u) => !u.isSuspended);
 
       if (isEmail(query)) {
@@ -108,8 +108,8 @@ export const Suggestions = observer(
         ...(document
           ? groups.notInDocument(document.id, query)
           : collection
-          ? groups.notInCollection(collection.id, query)
-          : []),
+            ? groups.notInCollection(collection.id, query)
+            : []),
         ...filtered,
       ];
     }, [
@@ -132,7 +132,7 @@ export const Suggestions = observer(
           .map((id) =>
             isEmail(id)
               ? getSuggestionForEmail(id)
-              : users.get(id) ?? groups.get(id)
+              : (users.get(id) ?? groups.get(id))
           )
           .filter(Boolean) as User[],
       [users, groups, getSuggestionForEmail, pendingIds]
@@ -154,9 +154,10 @@ export const Suggestions = observer(
       }
       return {
         title: suggestion.name,
-        subtitle: suggestion.isViewer
-          ? t("Viewer")
-          : t("Editor"),
+        subtitle: t("TouhouAI member")
+          : suggestion.isViewer
+            ? t("Viewer")
+            : t("Editor"),
         image: <Avatar model={suggestion} size={AvatarSize.Medium} />,
       };
     }
