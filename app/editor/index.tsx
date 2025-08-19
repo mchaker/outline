@@ -448,7 +448,7 @@ export class Editor extends React.PureComponent<
           step.mark.type.name === this.schema.marks.comment.name
       );
 
-    const self = this; // eslint-disable-line
+    const self = this; // oxlint-disable-line
     const view = new EditorView(this.elementRef.current, {
       handleDOMEvents: {
         blur: this.handleEditorBlur,
@@ -504,12 +504,24 @@ export class Editor extends React.PureComponent<
       return;
     }
 
+    function isVisible(element: HTMLElement | null) {
+      for (let e = element; e; e = e.parentElement) {
+        const s = getComputedStyle(e);
+        if (s.display === "none" || s.opacity === "0") {
+          return false;
+        }
+      }
+      return true;
+    }
+
     try {
       this.mutationObserver?.disconnect();
       this.mutationObserver = observe(
         hash,
         (element) => {
-          element.scrollIntoView();
+          if (isVisible(element)) {
+            element.scrollIntoView();
+          }
         },
         this.elementRef.current || undefined
       );
@@ -796,6 +808,7 @@ export class Editor extends React.PureComponent<
               focusedCommentId={this.props.focusedCommentId}
               userId={this.props.userId}
               editorStyle={this.props.editorStyle}
+              commenting={!!this.props.onClickCommentMark}
               ref={this.elementRef}
               lang=""
             />
