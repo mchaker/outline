@@ -12,6 +12,7 @@ import {
   CloseIcon,
   CrossIcon,
   DownloadIcon,
+  LinkIcon,
   NextIcon,
 } from "outline-icons";
 import { depths, extraArea, s } from "@shared/styles";
@@ -25,6 +26,9 @@ import Tooltip from "~/components/Tooltip";
 import LoadingIndicator from "./LoadingIndicator";
 import Fade from "./Fade";
 import Button from "./Button";
+import CopyToClipboard from "./CopyToClipboard";
+import { Separator } from "./Actions";
+import useSwipe from "~/hooks/useSwipe";
 
 export enum LightboxStatus {
   READY_TO_OPEN,
@@ -439,6 +443,8 @@ function Lightbox({ onUpdate, activePos }: Props) {
     if (animation.current?.fadeIn) {
       animation.current = {
         ...(animation.current ?? {}),
+        zoomIn: undefined,
+        fadeIn: undefined,
         startTime: undefined,
       };
       setStatus({
@@ -457,6 +463,8 @@ function Lightbox({ onUpdate, activePos }: Props) {
     return null;
   }
 
+  const src = sanitizeUrl(currentImageNode.attrs.src) ?? "";
+
   return (
     <Dialog.Root open={!!activePos}>
       <Dialog.Portal>
@@ -474,6 +482,18 @@ function Lightbox({ onUpdate, activePos }: Props) {
             </Dialog.Description>
           </VisuallyHidden.Root>
           <Actions animation={animation.current}>
+            <Tooltip content={t("Copy link")} placement="bottom">
+              <CopyToClipboard text={imgRef.current?.src ?? ""}>
+                <Button
+                  tabIndex={-1}
+                  aria-label={t("Copy link")}
+                  size={32}
+                  icon={<LinkIcon />}
+                  borderOnHover
+                  neutral
+                />
+              </CopyToClipboard>
+            </Tooltip>
             <Tooltip content={t("Download")} placement="bottom">
               <Button
                 tabIndex={-1}
@@ -485,6 +505,7 @@ function Lightbox({ onUpdate, activePos }: Props) {
                 neutral
               />
             </Tooltip>
+            <Separator />
             <Dialog.Close asChild>
               <Tooltip content={t("Close")} shortcut="Esc" placement="bottom">
                 <Button
@@ -508,7 +529,7 @@ function Lightbox({ onUpdate, activePos }: Props) {
           )}
           <Image
             ref={imgRef}
-            src={sanitizeUrl(currentImageNode.attrs.src) ?? ""}
+            src={src}
             alt={currentImageNode.attrs.alt ?? ""}
             onLoading={() =>
               setStatus({
@@ -530,7 +551,8 @@ function Lightbox({ onUpdate, activePos }: Props) {
             }
             onSwipeRight={prev}
             onSwipeLeft={next}
-            onSwipeUpOrDown={close}
+            onSwipeUp={close}
+            onSwipeDown={close}
             status={status}
             animation={animation.current}
           />
@@ -555,7 +577,8 @@ type ImageProps = {
   onError: () => void;
   onSwipeRight: () => void;
   onSwipeLeft: () => void;
-  onSwipeUpOrDown: () => void;
+  onSwipeUp: () => void;
+  onSwipeDown: () => void;
   status: Status;
   animation: Animation | null;
 };
@@ -569,59 +592,21 @@ const Image = forwardRef<HTMLImageElement, ImageProps>(function _Image(
     onError,
     onSwipeRight,
     onSwipeLeft,
-    onSwipeUpOrDown,
+    onSwipeUp,
+    onSwipeDown,
     status,
     animation,
   }: ImageProps,
   ref
 ) {
   const { t } = useTranslation();
-  const touchXStart = useRef<number>();
-  const touchXEnd = useRef<number>();
-  const touchYStart = useRef<number>();
-  const touchYEnd = useRef<number>();
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLImageElement>) => {
-    touchXStart.current = e.changedTouches[0].screenX;
-    touchYStart.current = e.changedTouches[0].screenY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLImageElement>) => {
-    touchXEnd.current = e.changedTouches[0].screenX;
-    touchYEnd.current = e.changedTouches[0].screenY;
-    const dx = touchXEnd.current - (touchXStart.current ?? 0);
-    const dy = touchYEnd.current - (touchYStart.current ?? 0);
-
-    const swipeRight = dx > 0 && Math.abs(dy) < Math.abs(dx);
-    if (swipeRight) {
-      return onSwipeRight();
-    }
-
-    const swipeLeft = dx < 0 && Math.abs(dy) < Math.abs(dx);
-    if (swipeLeft) {
-      return onSwipeLeft();
-    }
-
-    const swipeDown = dy > 0 && Math.abs(dy) > Math.abs(dx);
-    const swipeUp = dy < 0 && Math.abs(dy) > Math.abs(dx);
-    if (swipeUp || swipeDown) {
-      return onSwipeUpOrDown();
-    }
-  };
-
-  const handleTouchEnd = () => {
-    touchXStart.current = undefined;
-    touchXEnd.current = undefined;
-    touchYStart.current = undefined;
-    touchYEnd.current = undefined;
-  };
-
-  const handleTouchCancel = () => {
-    touchXStart.current = undefined;
-    touchXEnd.current = undefined;
-    touchYStart.current = undefined;
-    touchYEnd.current = undefined;
-  };
+  const swipeHandlers = useSwipe({
+    onSwipeRight,
+    onSwipeLeft,
+    onSwipeUp,
+    onSwipeDown,
+  });
 
   const [hidden, setHidden] = useState(
     status.image === null || status.image === ImageStatus.LOADING
@@ -640,7 +625,7 @@ const Image = forwardRef<HTMLImageElement, ImageProps>(function _Image(
   }, [status.image]);
 
   return status.image === ImageStatus.ERROR ? (
-    <StyledError animation={animation}>
+    <StyledError animation={animation} {...swipeHandlers}>
       <CrossIcon size={16} /> {t("Image failed to load")}
     </StyledError>
   ) : (
@@ -653,10 +638,7 @@ const Image = forwardRef<HTMLImageElement, ImageProps>(function _Image(
           alt={alt}
           animation={animation}
           onAnimationStart={() => setHidden(false)}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchCancel}
+          {...swipeHandlers}
           onError={onError}
           onLoad={onLoad}
           $hidden={hidden}
@@ -757,7 +739,8 @@ const Actions = styled.div<{
   right: 0;
   margin: 16px 12px;
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
 
   ${(props) =>
     props.animation === null
