@@ -12,9 +12,7 @@ import {
   Plugin,
   TextSelection,
 } from "prosemirror-state";
-import * as React from "react";
 import { Primitive } from "utility-types";
-import { v4 as uuidv4 } from "uuid";
 import env from "../../env";
 import { MentionType, UnfurlResourceType, UnfurlResponse } from "../../types";
 import {
@@ -147,7 +145,12 @@ export default class Mention extends Node {
           />
         );
       case MentionType.URL:
-        return <MentionURL {...props} />;
+        return (
+          <MentionURL
+            {...props}
+            onChangeUnfurl={this.handleChangeUnfurl(props)}
+          />
+        );
       default:
         return null;
     }
@@ -172,7 +175,7 @@ export default class Mention extends Node {
               node.type.name === this.name &&
               (!nodeId || existingIds.has(nodeId))
             ) {
-              nodeId = uuidv4();
+              nodeId = crypto.randomUUID();
               modified = true;
               tr.setNodeAttribute(pos, "id", nodeId);
             }
@@ -325,7 +328,8 @@ export default class Mention extends Node {
 
       const label =
         unfurl.type === UnfurlResourceType.Issue ||
-        unfurl.type === UnfurlResourceType.PR
+        unfurl.type === UnfurlResourceType.PR ||
+        unfurl.type === UnfurlResourceType.URL
           ? unfurl.title
           : undefined;
 
