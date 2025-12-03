@@ -15,38 +15,42 @@ type Props = ComponentProps & {
   /** Callback triggered when the image is clicked */
   onClick: () => void;
   /** Callback triggered when the download button is clicked */
-  onDownload?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDownload?: (event: React.MouseEvent<HTMLButtonElement>) => Promise<void>;
   /** Callback triggered when the image is resized */
   onChangeSize?: (props: { width: number; height?: number }) => void;
   /** The editor view */
   view: EditorView;
   children?: React.ReactElement;
-  isDownloading?: boolean;
 };
 
 const Image = (props: Props) => {
-  const { isSelected, node, isEditable, onChangeSize, onClick, isDownloading } =
-    props;
+  const { isSelected, node, isEditable, onChangeSize, onClick } = props;
   const { src, layoutClass } = node.attrs;
   const { t } = useTranslation();
   const className = layoutClass ? `image image-${layoutClass}` : "image";
   const [loaded, setLoaded] = React.useState(false);
   const [error, setError] = React.useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
   const [naturalWidth, setNaturalWidth] = React.useState(node.attrs.width);
   const [naturalHeight, setNaturalHeight] = React.useState(node.attrs.height);
   const lastTapTimeRef = React.useRef(0);
   const ref = React.useRef<HTMLDivElement>(null);
-  const { width, height, setSize, handlePointerDown, dragging } = useDragResize(
-    {
-      width: node.attrs.width ?? naturalWidth,
-      height: node.attrs.height ?? naturalHeight,
-      naturalWidth,
-      naturalHeight,
-      gridSnap: 5,
-      onChangeSize,
-      ref,
-    }
-  );
+  const {
+    width,
+    height,
+    setSize,
+    handlePointerDown,
+    handleDoubleClick,
+    dragging,
+  } = useDragResize({
+    width: node.attrs.width ?? naturalWidth,
+    height: node.attrs.height ?? naturalHeight,
+    naturalWidth,
+    naturalHeight,
+    gridSnap: 5,
+    onChangeSize,
+    ref,
+  });
 
   const isFullWidth = layoutClass === "full-width";
   const isResizable = !!props.onChangeSize && !error;
@@ -90,11 +94,27 @@ const Image = (props: Props) => {
     }
   };
 
+  const handleDownload = async (ev: React.MouseEvent<HTMLButtonElement>) => {
+    ev.preventDefault();
+    if (props.onDownload) {
+      setIsDownloading(true);
+      try {
+        await props.onDownload(ev);
+      } finally {
+        setIsDownloading(false);
+      }
+    }
+  };
+
   return (
     <div contentEditable={false} className={className} ref={ref}>
       <ImageWrapper
         isFullWidth={isFullWidth}
-        className={isSelected || dragging ? "ProseMirror-selectednode" : ""}
+        className={
+          isSelected || dragging
+            ? "image-wrapper ProseMirror-selectednode"
+            : "image-wrapper"
+        }
         style={widthStyle}
       >
         {!dragging && width > 60 && isDownloadable && (
@@ -105,7 +125,7 @@ const Image = (props: Props) => {
               </Button>
             )}
             <Button
-              onClick={props.onDownload}
+              onClick={handleDownload}
               aria-label={t("Download")}
               disabled={isDownloading}
             >
@@ -172,10 +192,12 @@ const Image = (props: Props) => {
           <>
             <ResizeLeft
               onPointerDown={handlePointerDown("left")}
+              onDoubleClick={handleDoubleClick}
               $dragging={!!dragging}
             />
             <ResizeRight
               onPointerDown={handlePointerDown("right")}
+              onDoubleClick={handleDoubleClick}
               $dragging={!!dragging}
             />
           </>

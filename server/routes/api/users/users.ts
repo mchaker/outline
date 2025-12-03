@@ -321,6 +321,10 @@ router.post(
     }
     if (avatarUrl !== undefined) {
       user.avatarUrl = avatarUrl;
+
+      // Mark that the user has manually changed their avatar
+      // This prevents automatic syncing from identity providers
+      user.setFlag(UserFlag.AvatarUpdated, avatarUrl ? true : false);
     }
     if (language) {
       user.language = language;
@@ -521,7 +525,7 @@ router.post(
 
 router.post(
   "users.invite",
-  rateLimiter(RateLimiterStrategy.TenPerHour),
+  rateLimiter(RateLimiterStrategy.FiftyPerHour),
   auth(),
   validate(T.UsersInviteSchema),
   transaction(),

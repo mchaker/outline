@@ -1,6 +1,5 @@
 import { observer } from "mobx-react";
 import { getLuminance } from "polished";
-import * as React from "react";
 import styled from "styled-components";
 import useStores from "../hooks/useStores";
 import { IconType } from "../types";
@@ -8,8 +7,8 @@ import { IconLibrary } from "../utils/IconLibrary";
 import { colorPalette } from "../utils/collections";
 import { determineIconType } from "../utils/icon";
 import EmojiIcon from "./EmojiIcon";
-// import Logger from "~/utils/Logger";
 import Flex from "./Flex";
+import { CustomEmoji } from "./CustomEmoji";
 
 export type Props = {
   /** The icon to render */
@@ -57,6 +56,14 @@ const Icon = ({
           className={className}
           forceColor={forceColor}
         />
+      );
+    }
+
+    if (iconType === IconType.Custom) {
+      return (
+        <Span size={size} className={className}>
+          <CustomEmoji value={icon} size={size - size / 4} />
+        </Span>
       );
     }
 
@@ -115,6 +122,13 @@ export const IconTitleWrapper = styled(Flex)<{ dir?: string }>`
 
   ${(props: { dir?: string }) =>
     props.dir === "rtl" ? "right: -44px" : "left: -44px"};
+`;
+
+const Span = styled(Flex)<{ size: number }>`
+  width: ${(props) => props.size}px;
+  height: ${(props) => props.size}px;
+  align-items: center;
+  justify-content: center;
 `;
 
 export default Icon;

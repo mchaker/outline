@@ -33,6 +33,8 @@ import MultiplayerEditor from "./AsyncMultiplayerEditor";
 import DocumentMeta from "./DocumentMeta";
 import DocumentTitle from "./DocumentTitle";
 import first from "lodash/first";
+import { getLangFor } from "~/utils/language";
+import useShare from "@shared/hooks/useShare";
 
 const extensions = withUIExtensions(withComments(richExtensions));
 
@@ -66,12 +68,12 @@ function DocumentEditor(props: Props, ref: React.RefObject<any>) {
   const team = useCurrentTeam({ rejectOnEmpty: false });
   const sidebarContext = useLocationSidebarContext();
   const params = useQuery();
+  const { shareId } = useShare();
   const {
     document,
     onChangeTitle,
     onChangeIcon,
     isDraft,
-    shareId,
     readOnly,
     children,
     multiplayer,
@@ -229,11 +231,11 @@ function DocumentEditor(props: Props, ref: React.RefObject<any>) {
       )}
       <EditorComponent
         ref={mergeRefs([ref, handleRefChanged])}
+        lang={getLangFor(document.language)}
         autoFocus={!!document.title && !props.defaultValue}
         placeholder={t("Type '/' to insert, or start writing…")}
         scrollTo={decodeURIComponentSafe(window.location.hash)}
         readOnly={readOnly}
-        shareId={shareId}
         userId={user?.id}
         focusedCommentId={focusedComment?.id}
         onClickCommentMark={

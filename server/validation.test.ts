@@ -3,19 +3,18 @@ import { Buckets } from "./models/helpers/AttachmentHelper";
 import { ValidateKey } from "./validation";
 
 describe("#ValidateKey.isValid", () => {
-  it("should return false if number of key components are not equal to 4", () => {
+  it("should return false if number of key components is incorrect", () => {
     expect(
-      ValidateKey.isValid(`${Buckets.uploads}/${randomUUID()}/${randomUUID()}`)
-    ).toBe(false);
-    expect(
-      ValidateKey.isValid(`${Buckets.uploads}/${randomUUID()}/${randomUUID()}/foo/bar`)
+      ValidateKey.isValid(
+        `${Buckets.uploads}/${randomUUID()}/${randomUUID()}/foo/bar`
+      )
     ).toBe(false);
   });
 
   it("should return false if the first key component is not a valid bucket", () => {
-    expect(ValidateKey.isValid(`foo/${randomUUID()}/${randomUUID()}/bar.png`)).toBe(
-      false
-    );
+    expect(
+      ValidateKey.isValid(`foo/${randomUUID()}/${randomUUID()}/bar.png`)
+    ).toBe(false);
   });
 
   it("should return false if second and third key components are not UUID", () => {
@@ -29,10 +28,14 @@ describe("#ValidateKey.isValid", () => {
 
   it("should return true successfully validating key", () => {
     expect(
-      ValidateKey.isValid(`${Buckets.public}/${randomUUID()}/${randomUUID()}/foo.png`)
+      ValidateKey.isValid(
+        `${Buckets.public}/${randomUUID()}/${randomUUID()}/foo.png`
+      )
     ).toBe(true);
     expect(
-      ValidateKey.isValid(`${Buckets.uploads}/${randomUUID()}/${randomUUID()}/foo.png`)
+      ValidateKey.isValid(
+        `${Buckets.uploads}/${randomUUID()}/${randomUUID()}/foo.png`
+      )
     ).toBe(true);
     expect(
       ValidateKey.isValid(`${Buckets.avatars}/${randomUUID()}/${randomUUID()}`)
