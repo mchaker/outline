@@ -1,6 +1,7 @@
 import { observer } from "mobx-react";
 import { getLuminance } from "polished";
 import styled from "styled-components";
+import breakpoint from "styled-components-breakpoint";
 import useStores from "../hooks/useStores";
 import { IconType } from "../types";
 import { IconLibrary } from "../utils/IconLibrary";
@@ -18,7 +19,7 @@ export type Props = {
   /** The size of the icon */
   size?: number;
   /** The initial to display if the icon is a letter icon */
-  initial?: string;
+  initial: string;
   /** Optional additional class name */
   className?: string;
   /**
@@ -103,7 +104,7 @@ const SVGIcon = observer(
 
     return (
       <Component color={color} size={size} className={className}>
-        {initial}
+        {initial?.charAt(0).toUpperCase()}
       </Component>
     );
   }
@@ -113,15 +114,18 @@ export const IconTitleWrapper = styled(Flex)<{ dir?: string }>`
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: 3px;
+  top: -44px;
   height: 40px;
   width: 40px;
 
   // Always move above TOC
   z-index: 1;
 
-  ${(props: { dir?: string }) =>
-    props.dir === "rtl" ? "right: -44px" : "left: -44px"};
+  ${breakpoint("tablet")`
+    top: 3px;
+    ${(props: { dir?: string }) =>
+      props.dir === "rtl" ? "right: -44px" : "left: -44px"};
+  `}
 `;
 
 const Span = styled(Flex)<{ size: number }>`

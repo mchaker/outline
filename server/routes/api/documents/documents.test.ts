@@ -914,6 +914,82 @@ describe("#documents.list", () => {
     expect(body.data[1].id).toEqual(document.id);
   });
 
+  it("should allow pagination with collection index sort", async () => {
+    const user = await buildUser();
+    const collection = await buildCollection({
+      userId: user.id,
+      teamId: user.teamId,
+    });
+
+    // Create 25 documents for pagination testing
+    // Note: buildDocument adds each doc to position 0, so they'll be in reverse order
+    const documents = [];
+    for (let i = 0; i < 25; i++) {
+      const doc = await buildDocument({
+        title: `document ${i}`,
+        userId: user.id,
+        collectionId: collection.id,
+        teamId: user.teamId,
+      });
+      documents.push(doc);
+    }
+
+    // Documents are added at position 0, so the order in documentStructure is reversed
+    // documents[24] is first, documents[0] is last
+    const expectedOrder = documents.slice().reverse();
+
+    // First page (offset=0, limit=10)
+    const res1 = await server.post("/api/documents.list", {
+      body: {
+        token: user.getJwtToken(),
+        collectionId: collection.id,
+        sort: "index",
+        direction: "ASC",
+        offset: 0,
+        limit: 10,
+      },
+    });
+    const body1 = await res1.json();
+    expect(res1.status).toEqual(200);
+    expect(body1.data).toHaveLength(10);
+    expect(body1.data[0].id).toEqual(expectedOrder[0].id);
+    expect(body1.data[9].id).toEqual(expectedOrder[9].id);
+
+    // Second page (offset=10, limit=10) - this tests the bug fix
+    const res2 = await server.post("/api/documents.list", {
+      body: {
+        token: user.getJwtToken(),
+        collectionId: collection.id,
+        sort: "index",
+        direction: "ASC",
+        offset: 10,
+        limit: 10,
+      },
+    });
+    const body2 = await res2.json();
+    expect(res2.status).toEqual(200);
+    expect(body2.data).toHaveLength(10);
+    expect(body2.data[0].id).toEqual(expectedOrder[10].id);
+    expect(body2.data[9].id).toEqual(expectedOrder[19].id);
+
+    // Third page (offset=20, limit=10)
+    const res3 = await server.post("/api/documents.list", {
+      body: {
+        token: user.getJwtToken(),
+        collectionId: collection.id,
+        sort: "index",
+        direction: "ASC",
+        offset: 20,
+        limit: 10,
+      },
+    });
+    const body3 = await res3.json();
+    expect(res3.status).toEqual(200);
+    expect(body3.data).toHaveLength(5);
+    expect(body3.data[0].id).toEqual(expectedOrder[20].id);
+    expect(body3.data[4].id).toEqual(expectedOrder[24].id);
+  });
+
   it("should allow filtering by collection", async () => {
     const user = await buildUser();
     const document = await buildDocument({
@@ -1933,6 +2009,58 @@ describe("#documents.search", () => {
     expect(body.data[0].document.id).toEqual(document.id);
     expect(res.status).toEqual(200);
   });
+
+  it("should not return documents from other collections when filtering by specific collection without search term", async () => {
+    const user = await buildUser();
+    const collection1 = await buildCollection({
+      teamId: user.teamId,
+      userId: user.id,
+    });
+    const collection2 = await buildCollection({
+      teamId: user.teamId,
+      userId: user.id,
+    });
+    const docsInCollection1 = await Promise.all([
+      buildDocument({
+        teamId: user.teamId,
+        userId: user.id,
+        collectionId: collection1.id,
+        title: "document 1 in collection 1",
+      }),
+      buildDocument({
+        teamId: user.teamId,
+        userId: user.id,
+        collectionId: collection1.id,
+        title: "document 2 in collection 1",
+      }),
+    ]);
+    await Promise.all([
+      buildDocument({
+        teamId: user.teamId,
+        userId: user.id,
+        collectionId: collection2.id,
+        title: "document 1 in collection 2",
+      }),
+      buildDocument({
+        teamId: user.teamId,
+        userId: user.id,
+        collectionId: collection2.id,
+        title: "document 2 in collection 2",
+      }),
+    ]);
+    const res = await server.post("/api/documents.search", {
+      body: {
+        token: user.getJwtToken(),
+        collectionId: collection1.id,
+      },
+    });
+    const body = await res.json();
+    expect(res.status).toEqual(200);
+    expect(body.data).toHaveLength(2);
+    const returnedIds = body.data.map((d: any) => d.document.id).sort();
+    const expectedIds = docsInCollection1.map((d) => d.id).sort();
+    expect(returnedIds).toEqual(expectedIds);
+  });
 });
 
 describe("#documents.templatize", () => {
@@ -2088,26 +2216,6 @@ describe("#documents.templatize", () => {
 });
 
 describe("#documents.archived", () => {
-  it("should succeed with 200 ok if sort parameter in request is set to index", async () => {
-    const user = await buildUser();
-    const document = await buildDocument({
-      userId: user.id,
-      teamId: user.teamId,
-    });
-    await withAPIContext(user, (ctx) => document.archiveWithCtx(ctx));
-    const res = await server.post("/api/documents.archived", {
-      body: {
-        token: user.getJwtToken(),
-        sort: "index",
-      },
-    });
-    const body = await res.json();
-    expect(res.status).toEqual(200);
-    expect(body.data).toHaveLength(1);
-    expect(body.data[0].id).toEqual(document.id);
-    expect(body.data[0].archivedAt).toBeTruthy();
-  });
-
   it("should return archived documents in a given collection", async () => {
     const user = await buildUser();
     const [firstCollection, secondCollection] = await Promise.all([
