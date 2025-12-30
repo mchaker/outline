@@ -12,7 +12,7 @@ import { Document, Revision } from "@server/models";
 import { DocumentHelper } from "@server/models/helpers/DocumentHelper";
 import { authorize } from "@server/policies";
 import { presentPolicies, presentRevision } from "@server/presenters";
-import { APIContext } from "@server/types";
+import type { APIContext } from "@server/types";
 import pagination from "../middlewares/pagination";
 import * as T from "./schema";
 
@@ -52,13 +52,18 @@ router.post(
       throw ValidationError("Either id or documentId must be provided");
     }
 
+    // Client no longer needs expensive HTML calculation
+    const noHTML = Number(ctx.headers["x-api-version"] ?? 0) >= 4;
+
     ctx.body = {
       data: await presentRevision(
         after,
-        await DocumentHelper.diff(before, after, {
-          includeTitle: false,
-          includeStyles: false,
-        })
+        noHTML
+          ? undefined
+          : await DocumentHelper.diff(before, after, {
+              includeTitle: false,
+              includeStyles: false,
+            })
       ),
       policies: presentPolicies(user, [after]),
     };
