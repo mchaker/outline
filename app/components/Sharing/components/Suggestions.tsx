@@ -156,11 +156,11 @@ export const Suggestions = observer(
       }
       return {
         title: suggestion.name,
-        subtitle: suggestion.email
-          ? suggestion.email
-          : suggestion.isViewer
-            ? t("Viewer")
-            : t("Editor"),
+        subtitle: suggestion.isViewer /** suggestion.email **/
+          ? t("Viewer")
+          : suggestion.isAdmin
+          ? t("Admin")
+          : t("Editor"),
         image: <Avatar model={suggestion} size={AvatarSize.Medium} />,
       };
     }

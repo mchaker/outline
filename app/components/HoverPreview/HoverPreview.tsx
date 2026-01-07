@@ -150,7 +150,7 @@ const HoverPreviewDesktop = observer(
                   avatarUrl={data.avatarUrl}
                   color={data.color}
                   lastActive={data.lastActive}
-                  email={data.email}
+                  /**email={data.email}**/
                 />
               ) : data.type === UnfurlResourceType.Group ? (
                 <HoverPreviewGroup
